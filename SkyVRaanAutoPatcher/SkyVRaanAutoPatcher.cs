@@ -5,7 +5,7 @@ using Mutagen.Bethesda.Synthesis;
 using System;
 using System.Collections.Generic;
 
-namespace CellEditorIDFixer
+namespace SkyVRaanCubemapEnabler
 {
     public class SkyVRaanAutoPatcher
     {

@@ -147,7 +147,7 @@ namespace CellEditorIDFixer
                                 var overriddenCell = cellContext.GetOrAddAsOverride(state.PatchMod);
                                 overriddenCell.WaterEnvironmentMap = $"Data\\Textures\\cubemaps\\OutputCube.dds";
 
-                                if (!WaterBlacklist.Contains(overriddenCell.Water.FormKey ?? FormKey.Null))
+                                if (!WaterBlacklist.Contains(overriddenCell.Water.FormKey))
                                 {
                                     overriddenCell.Water = Skyrim.Water.DefaultWater;
                                 }

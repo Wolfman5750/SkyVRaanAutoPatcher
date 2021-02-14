@@ -5,7 +5,7 @@ using Mutagen.Bethesda.Synthesis;
 using System;
 using System.Collections.Generic;
 
-namespace SkyVRaanCubemapEnabler
+namespace CellEditorIDFixer
 {
     public class SkyVRaanAutoPatcher
     {
@@ -71,6 +71,12 @@ namespace SkyVRaanCubemapEnabler
                 Dawnguard.Activator.DLC1Water1024Frostreach,
                 Dawnguard.Activator.DLC1Water1024FrostreachSE,
                 Dawnguard.Activator.DLC1Water1024Frostreach,
+                Dawnguard.Activator.Lava1024,
+                Dawnguard.Activator.Blood_RainWaterBarrel,
+                Dawnguard.Activator.LargeRainBarrel_BloodWater01,
+                Dawnguard.Activator.DLC1BloodChaliceActivatorEmpty,
+                Dawnguard.Activator.DLC1BloodChaliceActivatorFull,
+                Dawnguard.Activator.DLC1BloodMagicShrine,
                 Dragonborn.Activator.DLC2dunKolbjornWater,
                 Dragonborn.Activator.DLC2KagrumezWater,
                 Dragonborn.Activator.DLC2WaterPuddle01,
@@ -106,9 +112,12 @@ namespace SkyVRaanCubemapEnabler
             var WaterBlacklist = new HashSet<FormKey>
             {
                 Skyrim.Water.DefaultVolcanicWater,          //Volcanic Water is skipped for now. It doesn't seem to be an issue yet. Two watertypes should be ok.
+                Skyrim.Water.BlackreachWater,
                 Dragonborn.Water.DLC2ApocryphaWater,
                 Dragonborn.Water.DLC2ApocryphaWaterSmall,
-                Dragonborn.Water.DLC2ApocryphaWaterTamriel
+                Dragonborn.Water.DLC2ApocryphaWaterTamriel,
+                Skyrim.Water.LavaWater,
+                Dawnguard.Water.DLC1BloodWater
             };
 
             Console.WriteLine($"Patching Worldspaces ...");
@@ -147,7 +156,7 @@ namespace SkyVRaanCubemapEnabler
                                 var overriddenCell = cellContext.GetOrAddAsOverride(state.PatchMod);
                                 overriddenCell.WaterEnvironmentMap = $"Data\\Textures\\cubemaps\\OutputCube.dds";
 
-                                if (!WaterBlacklist.Contains(overriddenCell.Water.FormKey ?? FormKey.Null))
+                                if (!WaterBlacklist.Contains(overriddenCell.Water.FormKey))
                                 {
                                     overriddenCell.Water = Skyrim.Water.DefaultWater;
                                 }
@@ -160,26 +169,32 @@ namespace SkyVRaanCubemapEnabler
 
             }
 
-            Console.WriteLine($"Patching Water Statics ...");
+            Console.WriteLine($"Patching Water Statics ... (UPDATED)");
 
             foreach (var ActivatorContext in state.LoadOrder.PriorityOrder.Activator().WinningContextOverrides(state.LinkCache))
             {
-                var WaterActivator = ActivatorContext.Record;
-                if (WaterActivator.EditorID.Contains("water", StringComparison.OrdinalIgnoreCase))
+                if (ActivatorContext != null)
                 {
-                    if (WaterActivator.WaterType.TryResolve(state.LinkCache, out var WaterActivatorType))
-                    {
-                        if (!WaterStaticBlacklist.Contains(WaterActivator.FormKey))
+
+                    var WaterActivator = ActivatorContext.Record;
+                    //if (WaterActivator != null && WaterActivator.WaterType !=null)
+                    //{
+                        Console.WriteLine($"Checking WaterActivator: " + WaterActivator.FormKey);
+
+                        if (WaterActivator.WaterType.TryResolve(state.LinkCache, out var WaterActivatorType))
                         {
-                            var OverriddenWaterStatic = ActivatorContext.GetOrAddAsOverride(state.PatchMod);
-                            OverriddenWaterStatic.WaterType = Skyrim.Water.DefaultWater;
-                            WaterStaticCounter++;
+                            if (!WaterStaticBlacklist.Contains(WaterActivator.FormKey) && !WaterBlacklist.Contains(WaterActivatorType.FormKey))
+                            {
+                                var OverriddenWaterStatic = ActivatorContext.GetOrAddAsOverride(state.PatchMod);
+                                OverriddenWaterStatic.WaterType = Skyrim.Water.DefaultWater;
+                                WaterStaticCounter++;
+                            }
+
                         }
 
-                    }
 
 
-
+                    //}
                 }
             }
 

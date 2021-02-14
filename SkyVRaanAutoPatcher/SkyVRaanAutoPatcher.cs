@@ -5,9 +5,9 @@ using Mutagen.Bethesda.Synthesis;
 using System;
 using System.Collections.Generic;
 
-namespace CellEditorIDFixer
+namespace SkyVRaanCubemapPatcher
 {
-    public class SkyVRaanAutoPatcher
+    public class SkyVRaanWeatherPatcher
     {
         public static int Main(string[] args)
         {
@@ -21,7 +21,7 @@ namespace CellEditorIDFixer
                     ActionsForEmptyArgs = new RunDefaultPatcher
                     {
                         
-                        IdentifyingModKey = "SkyVRaanAutoPatcher.esp",
+                        IdentifyingModKey = "SkyVRaanWeatherPatcher.esp",
                         TargetRelease = GameRelease.SkyrimSE
                     }
                 }

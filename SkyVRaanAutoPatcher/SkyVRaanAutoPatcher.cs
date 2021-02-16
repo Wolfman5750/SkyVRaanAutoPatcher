@@ -130,8 +130,11 @@ namespace SkyVRaanCubemapPatcher
                     if (WRLD.Water.FormKey != null)
                     {
                     var OverriddenWRLD = WRLDContext.GetOrAddAsOverride(state.PatchMod);
-                        OverriddenWRLD.LodWater = Skyrim.Water.DefaultWater;
-                        OverriddenWRLD.Water = Skyrim.Water.DefaultWater;
+                        if (OverriddenWRLD.FormKey != Skyrim.Worldspace.Blackreach)
+                        {
+                            OverriddenWRLD.LodWater = Skyrim.Water.DefaultWater;
+                            OverriddenWRLD.Water = Skyrim.Water.DefaultWater;
+                        }
                         OverriddenWRLD.WaterEnvironmentMap = $"Data\\Textures\\cubemaps\\OutputCube.dds";
                         WRLDCounter++;
                     }
@@ -156,7 +159,7 @@ namespace SkyVRaanCubemapPatcher
                                 var overriddenCell = cellContext.GetOrAddAsOverride(state.PatchMod);
                                 overriddenCell.WaterEnvironmentMap = $"Data\\Textures\\cubemaps\\OutputCube.dds";
 
-                                if (!WaterBlacklist.Contains(overriddenCell.Water.FormKey))
+                                if (!WaterBlacklist.Contains(overriddenCell.Water.FormKey) && CellWRLD.FormKey != Skyrim.Worldspace.Blackreach)
                                 {
                                     overriddenCell.Water = Skyrim.Water.DefaultWater;
                                 }

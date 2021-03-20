@@ -4,44 +4,34 @@ using Mutagen.Bethesda.FormKeys.SkyrimSE;
 using Mutagen.Bethesda.Synthesis;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace SkyVRaanCubemapPatcher
 {
     public class SkyVRaanWeatherPatcher
     {
-        public static int Main(string[] args)
+        public static Task<int> Main(string[] args)
         {
-            return SynthesisPipeline.Instance.Patch<ISkyrimMod, ISkyrimModGetter>(
-                args: args,
-                patcher: RunPatch,
-                new UserPreferences()
-                {
-                    AddImplicitMasters = false,
-                    //IncludeDisabledMods = true,
-                    ActionsForEmptyArgs = new RunDefaultPatcher
-                    {
-
-                        IdentifyingModKey = "SkyVRaanWeatherPatcher.esp",
-                        TargetRelease = GameRelease.SkyrimSE
-                    }
-                }
-            );
+            return SynthesisPipeline.Instance
+                .SetTypicalOpen(GameRelease.SkyrimSE, "SkyVRaanWeatherPatcher.esp")
+                .AddPatch<ISkyrimMod, ISkyrimModGetter>(RunPatch)
+                .Run(args);
         }
 
-        public static void RunPatch(SynthesisState<ISkyrimMod, ISkyrimModGetter> state)
+        public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
             var WRLDCounter = 0;
             var CellCounter = 0;
             var WaterStaticCounter = 0;
 
-            var WRLDBlacklist = new HashSet<FormKey>
+            var WRLDBlacklist = new HashSet<IFormLinkGetter<IWorldspaceGetter>>
             {
                 Dawnguard.Worldspace.DLC1ForebearsHoldout,
                 Dawnguard.Worldspace.DLC1AncestorsGladeWorld,
                 Dragonborn.Worldspace.DLC2ApocryphaWorld
             };
 
-            var WaterStaticBlacklist = new HashSet<FormKey>
+            var WaterStaticBlacklist = new HashSet<IFormLinkGetter<IActivatorGetter>>
             {
                 //*******************************************************************************
                 //** Formkeys included in this blacklist will not be converted to DefaultWater **
@@ -109,7 +99,7 @@ namespace SkyVRaanCubemapPatcher
                 //Skyrim.Activator.Water1024Volcanic        //Volcanic Water is skipped for now. It doesn't seem to be an issue yet. 
             };
 
-            var WaterBlacklist = new HashSet<FormKey>
+            var WaterBlacklist = new HashSet<IFormLinkGetter<IWaterGetter>>
             {
                 Skyrim.Water.DefaultVolcanicWater,          //Volcanic Water is skipped for now. It doesn't seem to be an issue yet. Two watertypes should be ok.
                 Skyrim.Water.BlackreachWater,
@@ -122,43 +112,46 @@ namespace SkyVRaanCubemapPatcher
 
             Console.WriteLine($"Patching Worldspaces ...");
 
-            foreach (var WRLDContext in state.LoadOrder.PriorityOrder.Worldspace().WinningContextOverrides(state.LinkCache))
+            foreach (var WRLDContext in state.LoadOrder.PriorityOrder.Worldspace().WinningContextOverrides())
             {
                 var WRLD = WRLDContext.Record;
-                if (!WRLDBlacklist.Contains(WRLD.FormKey))
+                if (!WRLDBlacklist.Contains(WRLD.AsLink()))
                 {
                     if (WRLD.Water.FormKey != null)
                     {
                         var OverriddenWRLD = WRLDContext.GetOrAddAsOverride(state.PatchMod);
-                        if (OverriddenWRLD.FormKey != Skyrim.Worldspace.Blackreach)
+                        if (!OverriddenWRLD.Equals(Skyrim.Worldspace.Blackreach))
                         {
-                            OverriddenWRLD.LodWater = Skyrim.Water.DefaultWater;
-                            OverriddenWRLD.Water = Skyrim.Water.DefaultWater;
+                            OverriddenWRLD.LodWater.SetTo(Skyrim.Water.DefaultWater);
+                            OverriddenWRLD.Water.SetTo(Skyrim.Water.DefaultWater);
                         }
                         OverriddenWRLD.WaterEnvironmentMap = $"Data\\Textures\\cubemaps\\OutputCube.dds";
                         WRLDCounter++;
                     }
+
                 }
+
             }
 
             Console.WriteLine($"Patching Worldspace Cells ...");
 
             foreach (var cellContext in state.LoadOrder.PriorityOrder.Cell().WinningContextOverrides(state.LinkCache))
             {
+
                 var cell = cellContext.Record;
 
                 if (cellContext.TryGetParent<IWorldspaceGetter>(out var CellWRLD))
                 {
-                    if (!WRLDBlacklist.Contains(CellWRLD.FormKey))
+                    if (!WRLDBlacklist.Contains(CellWRLD.AsLink()))
                     {
                         if (CellWRLD.Water.FormKey != null)
                         {
                             var overriddenCell = cellContext.GetOrAddAsOverride(state.PatchMod);
                             overriddenCell.WaterEnvironmentMap = $"Data\\Textures\\cubemaps\\OutputCube.dds";
 
-                            if (!WaterBlacklist.Contains(overriddenCell.Water.FormKey) && CellWRLD.FormKey != Skyrim.Worldspace.Blackreach)
+                            if (!WaterBlacklist.Contains(overriddenCell.Water) && !CellWRLD.Equals(Skyrim.Worldspace.Blackreach))
                             {
-                                overriddenCell.Water = Skyrim.Water.DefaultWater;
+                                overriddenCell.Water.SetTo(Skyrim.Water.DefaultWater);
                             }
                             CellCounter++;
                         }
@@ -168,7 +161,7 @@ namespace SkyVRaanCubemapPatcher
 
             Console.WriteLine($"Patching Water Statics ... (UPDATED)");
 
-            foreach (var ActivatorContext in state.LoadOrder.PriorityOrder.Activator().WinningContextOverrides(state.LinkCache))
+            foreach (var ActivatorContext in state.LoadOrder.PriorityOrder.Activator().WinningContextOverrides())
             {
                 if (ActivatorContext != null)
                 {
@@ -177,13 +170,12 @@ namespace SkyVRaanCubemapPatcher
 
                     if (WaterActivator.WaterType.TryResolve(state.LinkCache, out var WaterActivatorType))
                     {
-                        if (!WaterStaticBlacklist.Contains(WaterActivator.FormKey) && !WaterBlacklist.Contains(WaterActivatorType.FormKey))
+                        if (!WaterStaticBlacklist.Contains(WaterActivator) && !WaterBlacklist.Contains(WaterActivatorType))
                         {
                             var OverriddenWaterStatic = ActivatorContext.GetOrAddAsOverride(state.PatchMod);
-                            OverriddenWaterStatic.WaterType = Skyrim.Water.DefaultWater;
+                            OverriddenWaterStatic.WaterType.SetTo(Skyrim.Water.DefaultWater);
                             WaterStaticCounter++;
                         }
-
                     }
                 }
             }

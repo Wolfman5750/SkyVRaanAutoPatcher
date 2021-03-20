@@ -20,7 +20,7 @@ namespace SkyVRaanCubemapPatcher
                     //IncludeDisabledMods = true,
                     ActionsForEmptyArgs = new RunDefaultPatcher
                     {
-                        
+
                         IdentifyingModKey = "SkyVRaanWeatherPatcher.esp",
                         TargetRelease = GameRelease.SkyrimSE
                     }
@@ -129,7 +129,7 @@ namespace SkyVRaanCubemapPatcher
                 {
                     if (WRLD.Water.FormKey != null)
                     {
-                    var OverriddenWRLD = WRLDContext.GetOrAddAsOverride(state.PatchMod);
+                        var OverriddenWRLD = WRLDContext.GetOrAddAsOverride(state.PatchMod);
                         if (OverriddenWRLD.FormKey != Skyrim.Worldspace.Blackreach)
                         {
                             OverriddenWRLD.LodWater = Skyrim.Water.DefaultWater;
@@ -138,38 +138,32 @@ namespace SkyVRaanCubemapPatcher
                         OverriddenWRLD.WaterEnvironmentMap = $"Data\\Textures\\cubemaps\\OutputCube.dds";
                         WRLDCounter++;
                     }
-                   
                 }
-            
             }
 
             Console.WriteLine($"Patching Worldspace Cells ...");
 
             foreach (var cellContext in state.LoadOrder.PriorityOrder.Cell().WinningContextOverrides(state.LinkCache))
             {
-               
                 var cell = cellContext.Record;
-                   
-                    if (cellContext.TryGetParent<IWorldspaceGetter>(out var CellWRLD))    
+
+                if (cellContext.TryGetParent<IWorldspaceGetter>(out var CellWRLD))
+                {
+                    if (!WRLDBlacklist.Contains(CellWRLD.FormKey))
                     {
-                       if (!WRLDBlacklist.Contains(CellWRLD.FormKey))
+                        if (CellWRLD.Water.FormKey != null)
                         {
-                            if (CellWRLD.Water.FormKey != null)
+                            var overriddenCell = cellContext.GetOrAddAsOverride(state.PatchMod);
+                            overriddenCell.WaterEnvironmentMap = $"Data\\Textures\\cubemaps\\OutputCube.dds";
+
+                            if (!WaterBlacklist.Contains(overriddenCell.Water.FormKey) && CellWRLD.FormKey != Skyrim.Worldspace.Blackreach)
                             {
-                                var overriddenCell = cellContext.GetOrAddAsOverride(state.PatchMod);
-                                overriddenCell.WaterEnvironmentMap = $"Data\\Textures\\cubemaps\\OutputCube.dds";
-
-                                if (!WaterBlacklist.Contains(overriddenCell.Water.FormKey) && CellWRLD.FormKey != Skyrim.Worldspace.Blackreach)
-                                {
-                                    overriddenCell.Water = Skyrim.Water.DefaultWater;
-                                }
-                                CellCounter++;
+                                overriddenCell.Water = Skyrim.Water.DefaultWater;
                             }
-
+                            CellCounter++;
                         }
-
                     }
-
+                }
             }
 
             Console.WriteLine($"Patching Water Statics ... (UPDATED)");
@@ -178,26 +172,19 @@ namespace SkyVRaanCubemapPatcher
             {
                 if (ActivatorContext != null)
                 {
-
                     var WaterActivator = ActivatorContext.Record;
-                    //if (WaterActivator != null && WaterActivator.WaterType !=null)
-                    //{
-                        Console.WriteLine($"Checking WaterActivator: " + WaterActivator.FormKey);
+                    Console.WriteLine($"Checking WaterActivator: " + WaterActivator.FormKey);
 
-                        if (WaterActivator.WaterType.TryResolve(state.LinkCache, out var WaterActivatorType))
+                    if (WaterActivator.WaterType.TryResolve(state.LinkCache, out var WaterActivatorType))
+                    {
+                        if (!WaterStaticBlacklist.Contains(WaterActivator.FormKey) && !WaterBlacklist.Contains(WaterActivatorType.FormKey))
                         {
-                            if (!WaterStaticBlacklist.Contains(WaterActivator.FormKey) && !WaterBlacklist.Contains(WaterActivatorType.FormKey))
-                            {
-                                var OverriddenWaterStatic = ActivatorContext.GetOrAddAsOverride(state.PatchMod);
-                                OverriddenWaterStatic.WaterType = Skyrim.Water.DefaultWater;
-                                WaterStaticCounter++;
-                            }
-
+                            var OverriddenWaterStatic = ActivatorContext.GetOrAddAsOverride(state.PatchMod);
+                            OverriddenWaterStatic.WaterType = Skyrim.Water.DefaultWater;
+                            WaterStaticCounter++;
                         }
 
-
-
-                    //}
+                    }
                 }
             }
 

@@ -50,7 +50,7 @@ namespace SkyVRaanCubemapPatcher
                 //********  Not used in any worldspace ***********
 
                 Skyrim.Activator.WaterCreekDeepInterior01,
-                Skyrim.Activator.WRTreeCircleWater01ACT,
+                //Skyrim.Activator.WRTreeCircleWater01ACT,
                 Skyrim.Activator.TG08Water1024,
                 Skyrim.Activator.Water1024DefaultIntWaistStill,
                 Skyrim.Activator.Water2048DefaultIntWaistStill,
